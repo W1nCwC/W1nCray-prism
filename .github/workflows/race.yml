@@ -1,0 +1,22 @@
+name: race
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: vet
+        run: go vet -tags with_quic,with_wireguard,with_gvisor,with_acme ./...
+      - name: test with the race detector
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race -count=1 -timeout 30m -tags with_quic,with_wireguard,with_gvisor,with_acme ./...

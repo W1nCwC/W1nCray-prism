@@ -1,0 +1,16 @@
+W1nCray-prism
+Copyright (C) the W1nCray authors.
+
+This program is free software under the GNU General Public License, version 3
+or any later version (see LICENSE).
+
+Parts of this program are derived from the inbound implementations of the
+upstream core it embeds (Go module github.com/sagernet/sing-box, version
+1.14.3, GPL-3.0-or-later, Copyright (C) 2022 by nekohasekai): the files under
+inbound/ keep the structure of the upstream packages and add hot replacement
+of the user set. The license text in LICENSE is the upstream one and applies
+to the whole program.
+
+W1nCray-prism is an independent program. It is not the upstream project and
+does not imply any association with it. Every release carries the complete
+corresponding source code (see docs/RELEASE.md).
