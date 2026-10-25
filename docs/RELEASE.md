@@ -19,3 +19,7 @@ Build tags: `with_quic,with_wireguard,with_gvisor,with_acme`.
 
 Race checks run in CI (`.github/workflows/race.yml`): the machines used to
 develop the program have no C toolchain, which `-race` needs.
+
+The source archive's `vendor/` holds what the program builds with
+(`go build -mod=vendor -tags ... ./cmd/w1ncray-prism`). Test-only dependencies
+are not vendored; `go test` fetches them through the module proxy.

@@ -28,7 +28,16 @@ build linux 386 "" linux-386
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 git archive --format=tar --prefix="W1nCray-prism-$TAG/" HEAD | tar -x -C "$STAGE"
-(cd "$STAGE/W1nCray-prism-$TAG" && go mod vendor)
+# Vendor what the program itself needs. Test-only dependencies (the full upstream
+# protocol set the engine tests register, ~1.6 GB with cronet) are left out: the
+# vendor tree is made from a copy without *_test.go, then placed next to the full
+# source. `go build -mod=vendor` works; `go test` needs the module proxy.
+VEND="$(mktemp -d)"
+trap 'rm -rf "$STAGE" "$VEND"' EXIT
+cp -r "$STAGE/W1nCray-prism-$TAG/." "$VEND/"
+find "$VEND" -name '*_test.go' -delete
+(cd "$VEND" && go mod vendor)
+mv "$VEND/vendor" "$STAGE/W1nCray-prism-$TAG/vendor"
 tar -C "$STAGE" -czf "$OUT/W1nCray-prism-$TAG-src.tar.gz" "W1nCray-prism-$TAG"
 (cd "$OUT" && sha256sum "W1nCray-prism-$TAG-src.tar.gz" >> SHA256SUMS)
 echo "release $TAG ready in $OUT/"
