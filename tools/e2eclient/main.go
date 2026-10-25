@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -29,12 +30,13 @@ func main() {
 	uuid := flag.String("uuid", "", "the panel user's uuid")
 	listen := flag.String("listen", "127.0.0.1:1081", "local mixed proxy address")
 	sni := flag.String("sni", "localhost", "TLS server name")
+	outFile := flag.String("outbound", "", "a ready outbound JSON (a subscription entry); replaces -kind/-server/-uuid")
 	flag.Parse()
 
 	host, portText, ok := strings.Cut(*server, ":")
 	port, err := strconv.Atoi(portText)
-	if !ok || err != nil || *uuid == "" {
-		fmt.Fprintln(os.Stderr, "usage: e2eclient -kind K -server host:port -uuid U [-listen addr]")
+	if *outFile == "" && (!ok || err != nil || *uuid == "") {
+		fmt.Fprintln(os.Stderr, "usage: e2eclient -kind K -server host:port -uuid U [-listen addr] | -outbound file")
 		os.Exit(2)
 	}
 	lhost, lportText, _ := strings.Cut(*listen, ":")
@@ -49,14 +51,28 @@ func main() {
 	}
 	srv := fmt.Sprintf(`"tag":"out","server":"%s","server_port":%d`, host, port)
 	var outbound string
-	switch *kind {
-	case "tuic":
+	switch {
+	case *outFile != "":
+		raw, rerr := os.ReadFile(*outFile)
+		if rerr != nil {
+			fmt.Fprintln(os.Stderr, "outbound:", rerr)
+			os.Exit(2)
+		}
+		var m map[string]any
+		if json.Unmarshal(raw, &m) != nil {
+			fmt.Fprintln(os.Stderr, "outbound: not JSON")
+			os.Exit(2)
+		}
+		m["tag"] = "out"
+		raw, _ = json.Marshal(m)
+		outbound = string(raw)
+	case *kind == "tuic":
 		outbound = fmt.Sprintf(`{"type":"tuic",%s,"uuid":"%s","password":"%s","congestion_control":"bbr",%s}`, srv, *uuid, *uuid, tlsOut("h3"))
-	case "hysteria":
+	case *kind == "hysteria":
 		outbound = fmt.Sprintf(`{"type":"hysteria",%s,"up_mbps":100,"down_mbps":100,"auth_str":"%s",%s}`, srv, *uuid, tlsOut("hysteria"))
-	case "hysteria2":
+	case *kind == "hysteria2":
 		outbound = fmt.Sprintf(`{"type":"hysteria2",%s,"password":"%s",%s}`, srv, *uuid, tlsOut("h3"))
-	case "anytls":
+	case *kind == "anytls":
 		outbound = fmt.Sprintf(`{"type":"anytls",%s,"password":"%s",%s}`, srv, *uuid, tlsOut(""))
 	default:
 		fmt.Fprintln(os.Stderr, "unknown kind", *kind)
