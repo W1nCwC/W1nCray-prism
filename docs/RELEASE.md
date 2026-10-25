@@ -23,3 +23,9 @@ develop the program have no C toolchain, which `-race` needs.
 The source archive's `vendor/` holds what the program builds with
 (`go build -mod=vendor -tags ... ./cmd/w1ncray-prism`). Test-only dependencies
 are not vendored; `go test` fetches them through the module proxy.
+
+CI: `test` (vet, tests, `-race` on `gate` and `ipc`) must pass. `race-engine`
+is informational: `-race` on the engine tests reports an unsynchronised
+`closed` flag inside the third-party `anytls/sing-anytls` stream (Write vs
+Close, both frames inside the library); the TUIC, Hysteria and Hysteria 2
+paths are clean.
