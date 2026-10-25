@@ -12,7 +12,7 @@ import (
 
 const mib = 1 << 20
 
-var quicKinds = []string{"tuic", "hysteria", "hysteria2", "anytls"}
+var quicKinds = []string{"tuic", "hysteria", "hysteria2", "anytls", "vless", "vless-ws", "vless-vision", "vless-mux", "trojan", "trojan-ws"}
 
 func TestEveryProtocolCarriesTrafficAndCountsIt(t *testing.T) {
 	v := newEnv(t)
@@ -64,7 +64,7 @@ func TestEveryProtocolCarriesTrafficAndCountsIt(t *testing.T) {
 }
 
 func TestUnknownUsersAreRefusedAndHotAddRemoveKicks(t *testing.T) {
-	for _, kind := range []string{"tuic", "anytls"} {
+	for _, kind := range []string{"tuic", "hysteria", "hysteria2", "anytls", "vless", "vless-ws", "vless-vision", "trojan", "trojan-ws"} {
 		t.Run(kind, func(t *testing.T) {
 			v := newEnv(t)
 			port := freePort(t)
@@ -146,14 +146,18 @@ func TestInvalidConfigKeepsTheRunningOne(t *testing.T) {
 	c := newClient(t, map[string]string{"a": clientOutbound("tuic", "o-a", port, uuidA)})
 
 	cases := map[string]string{
-		"missing cert":   `{"inbounds":[{"type":"tuic","tag":"in","listen":"127.0.0.1","listen_port":1,"tls":{"enabled":true,"certificate_path":"/nonexistent.pem","key_path":"/nonexistent.key"}}]}`,
-		"unknown field":  `{"inbounds":[],"nonsense":true}`,
-		"foreign type":   `{"inbounds":[{"type":"mixed","tag":"x","listen":"127.0.0.1","listen_port":1}]}`,
-		"duplicate tag":  `{"inbounds":[{"type":"anytls","tag":"x","listen":"127.0.0.1","listen_port":2},{"type":"anytls","tag":"x","listen":"127.0.0.1","listen_port":3}]}`,
-		"users in cfg":   `{"inbounds":[{"type":"anytls","tag":"x","listen":"127.0.0.1","listen_port":2,"users":[{"name":"1","password":"p"}]}]}`,
-		"experimental":   `{"experimental":{"cache_file":{"enabled":true}}}`,
-		"not json":       `nope`,
-		"hy2 masquerade": `{"inbounds":[{"type":"hysteria2","tag":"x","listen":"127.0.0.1","listen_port":2,"masquerade":"https://example.com"}]}`,
+		"missing cert":    `{"inbounds":[{"type":"tuic","tag":"in","listen":"127.0.0.1","listen_port":1,"tls":{"enabled":true,"certificate_path":"/nonexistent.pem","key_path":"/nonexistent.key"}}]}`,
+		"unknown field":   `{"inbounds":[],"nonsense":true}`,
+		"foreign type":    `{"inbounds":[{"type":"mixed","tag":"x","listen":"127.0.0.1","listen_port":1}]}`,
+		"duplicate tag":   `{"inbounds":[{"type":"anytls","tag":"x","listen":"127.0.0.1","listen_port":2},{"type":"anytls","tag":"x","listen":"127.0.0.1","listen_port":3}]}`,
+		"users in cfg":    `{"inbounds":[{"type":"anytls","tag":"x","listen":"127.0.0.1","listen_port":2,"users":[{"name":"1","password":"p"}]}]}`,
+		"vless users":     `{"inbounds":[{"type":"vless","tag":"x","listen":"127.0.0.1","listen_port":2,"users":[{"name":"1","uuid":"` + uuidA + `"}]}]}`,
+		"vless flow":      `{"inbounds":[{"type":"vless","tag":"x","listen":"127.0.0.1","listen_port":2,"users":[{"flow":"xtls-rprx-direct"}]}]}`,
+		"trojan users":    `{"inbounds":[{"type":"trojan","tag":"x","listen":"127.0.0.1","listen_port":2,"users":[{"name":"1","password":"p"}]}]}`,
+		"trojan fallback": `{"inbounds":[{"type":"trojan","tag":"x","listen":"127.0.0.1","listen_port":2,"fallback":{"server":"127.0.0.1","server_port":80}}]}`,
+		"experimental":    `{"experimental":{"cache_file":{"enabled":true}}}`,
+		"not json":        `nope`,
+		"hy2 masquerade":  `{"inbounds":[{"type":"hysteria2","tag":"x","listen":"127.0.0.1","listen_port":2,"masquerade":"https://example.com"}]}`,
 	}
 	for name, cfg := range cases {
 		_, err := v.e.Apply("bad-"+name, []byte(cfg))

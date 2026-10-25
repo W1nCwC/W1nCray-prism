@@ -138,6 +138,18 @@ func (v *env) inbound(kind, tag string, port int) string {
 		return fmt.Sprintf(`{"type":"anytls",%s,%s}`, base, v.tls(""))
 	case "naive":
 		return fmt.Sprintf(`{"type":"naive",%s,"network":"tcp",%s}`, base, v.tls(""))
+	case "vless":
+		return fmt.Sprintf(`{"type":"vless",%s,%s}`, base, v.tls(""))
+	case "vless-ws":
+		return fmt.Sprintf(`{"type":"vless",%s,%s,"transport":{"type":"ws","path":"/ws"}}`, base, v.tls(""))
+	case "vless-vision":
+		return fmt.Sprintf(`{"type":"vless",%s,"users":[{"flow":"xtls-rprx-vision"}],%s}`, base, v.tls(""))
+	case "vless-mux":
+		return fmt.Sprintf(`{"type":"vless",%s,%s,"multiplex":{"enabled":true}}`, base, v.tls(""))
+	case "trojan":
+		return fmt.Sprintf(`{"type":"trojan",%s,%s}`, base, v.tls(""))
+	case "trojan-ws":
+		return fmt.Sprintf(`{"type":"trojan",%s,%s,"transport":{"type":"ws","path":"/ws"}}`, base, v.tls(""))
 	}
 	v.t.Fatalf("unknown kind %s", kind)
 
@@ -185,6 +197,18 @@ func clientOutbound(kind, tag string, port int, uuid string) string {
 		return fmt.Sprintf(`{"type":"hysteria2",%s,"password":"%s",%s}`, srv, uuid, tlsOut("h3"))
 	case "anytls":
 		return fmt.Sprintf(`{"type":"anytls",%s,"password":"%s",%s}`, srv, uuid, tlsOut(""))
+	case "vless":
+		return fmt.Sprintf(`{"type":"vless",%s,"uuid":"%s",%s}`, srv, uuid, tlsOut(""))
+	case "vless-ws":
+		return fmt.Sprintf(`{"type":"vless",%s,"uuid":"%s",%s,"transport":{"type":"ws","path":"/ws"}}`, srv, uuid, tlsOut(""))
+	case "vless-vision":
+		return fmt.Sprintf(`{"type":"vless",%s,"uuid":"%s","flow":"xtls-rprx-vision",%s}`, srv, uuid, tlsOut(""))
+	case "vless-mux":
+		return fmt.Sprintf(`{"type":"vless",%s,"uuid":"%s",%s,"multiplex":{"enabled":true}}`, srv, uuid, tlsOut(""))
+	case "trojan":
+		return fmt.Sprintf(`{"type":"trojan",%s,"password":"%s",%s}`, srv, uuid, tlsOut(""))
+	case "trojan-ws":
+		return fmt.Sprintf(`{"type":"trojan",%s,"password":"%s",%s,"transport":{"type":"ws","path":"/ws"}}`, srv, uuid, tlsOut(""))
 	}
 
 	return ""

@@ -14,7 +14,7 @@ the source archive. The panel installs the kernel from the mirror Release
 `prism-v<x>` of the W1nCray repository and verifies the SHA-256 of the asset
 (the same mechanism as the other own kernels).
 
-Build tags: `with_quic,with_wireguard,with_gvisor,with_acme`.
+Build tags: `with_quic,with_wireguard,with_gvisor,with_acme,with_utls`.
 `-trimpath -ldflags "-s -w -X main.version=<tag>"`.
 
 Race checks run in CI (`.github/workflows/race.yml`): the machines used to

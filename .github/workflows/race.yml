@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  TAGS: with_quic,with_wireguard,with_gvisor,with_acme
+  TAGS: with_quic,with_wireguard,with_gvisor,with_acme,with_utls
 
 jobs:
   test:

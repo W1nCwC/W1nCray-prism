@@ -17,15 +17,17 @@ import (
 	"github.com/sagernet/sing-box/protocol/http"
 	"github.com/sagernet/sing-box/protocol/shadowsocks"
 	"github.com/sagernet/sing-box/protocol/socks"
-	"github.com/sagernet/sing-box/protocol/trojan"
-	"github.com/sagernet/sing-box/protocol/vless"
+	ptrojan "github.com/sagernet/sing-box/protocol/trojan"
+	pvless "github.com/sagernet/sing-box/protocol/vless"
 	"github.com/sagernet/sing-box/protocol/vmess"
 
 	"github.com/W1nCwC/W1nCray-prism/inbound/anytls"
 	"github.com/W1nCwC/W1nCray-prism/inbound/hysteria"
 	"github.com/W1nCwC/W1nCray-prism/inbound/hysteria2"
 	"github.com/W1nCwC/W1nCray-prism/inbound/naive"
+	"github.com/W1nCwC/W1nCray-prism/inbound/trojan"
 	"github.com/W1nCwC/W1nCray-prism/inbound/tuic"
+	"github.com/W1nCwC/W1nCray-prism/inbound/vless"
 )
 
 // newContext returns the registry context the core is built with. Only what a
@@ -38,6 +40,8 @@ func newContext() context.Context {
 	hysteria2.Register(in)
 	anytls.Register(in)
 	naive.Register(in)
+	vless.Register(in)
+	trojan.Register(in)
 
 	out := outbound.NewRegistry()
 	direct.RegisterOutbound(out)
@@ -46,8 +50,8 @@ func newContext() context.Context {
 	http.RegisterOutbound(out)
 	shadowsocks.RegisterOutbound(out)
 	vmess.RegisterOutbound(out)
-	trojan.RegisterOutbound(out)
-	vless.RegisterOutbound(out)
+	ptrojan.RegisterOutbound(out)
+	pvless.RegisterOutbound(out)
 
 	ep := endpoint.NewRegistry()
 	registerWireGuard(ep)

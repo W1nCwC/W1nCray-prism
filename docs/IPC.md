@@ -25,3 +25,9 @@ reconnects.
 Credentials derive from the user's `uuid`: TUIC uses it as uuid and password,
 Hysteria / Hysteria2 / AnyTLS use it as the password, NaiveProxy uses
 `id:uuid` as HTTP basic credentials.
+
+VLESS uses the uuid as its credential and Trojan as its password. The VLESS
+flow belongs to the node, not to a user: the config carries it as the only
+entry of `users` (`"users":[{"flow":"xtls-rprx-vision"}]`, no name, no uuid;
+`xtls-rprx-vision` is the only flow). Any other use of `users` in a config is
+refused. Trojan fallbacks are not offered.

@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 TAG="${1:?usage: release/build.sh <tag, e.g. v0.1.0>}"
-TAGS="with_quic,with_wireguard,with_gvisor,with_acme"
+TAGS="with_quic,with_wireguard,with_gvisor,with_acme,with_utls"
 OUT="dist"
 rm -rf "$OUT"
 mkdir -p "$OUT"
