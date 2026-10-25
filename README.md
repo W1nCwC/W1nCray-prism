@@ -1,7 +1,7 @@
 # W1nCray-prism
 
 The second proxy kernel of the W1nCray panel system. A single program that
-serves TUIC, Hysteria, Hysteria 2, AnyTLS, NaiveProxy, VLESS and Trojan inbounds for panel
+serves TUIC, Hysteria, Hysteria 2, AnyTLS, NaiveProxy, VLESS, Trojan and mieru inbounds for panel
 users, driven by the W1nCray agent over a local socket (see `docs/IPC.md`).
 
 - Users are keyed by the stable panel user id and can be replaced while the

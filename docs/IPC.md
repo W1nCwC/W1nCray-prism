@@ -31,3 +31,9 @@ flow belongs to the node, not to a user: the config carries it as the only
 entry of `users` (`"users":[{"flow":"xtls-rprx-vision"}]`, no name, no uuid;
 `xtls-rprx-vision` is the only flow). Any other use of `users` in a config is
 refused. Trojan fallbacks are not offered.
+
+mieru uses the user id (decimal) as user name and the uuid as password. Its
+config takes `listen_port` (one port; ranges are refused), `transport`
+(`tcp`, the default, or `udp`) and an optional `traffic_pattern` (base64, at
+most 2048 bytes; it need not equal the client's). `users` must be absent.
+Client and server clocks must differ by less than 4 minutes.

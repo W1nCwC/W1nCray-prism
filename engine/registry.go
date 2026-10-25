@@ -24,6 +24,7 @@ import (
 	"github.com/W1nCwC/W1nCray-prism/inbound/anytls"
 	"github.com/W1nCwC/W1nCray-prism/inbound/hysteria"
 	"github.com/W1nCwC/W1nCray-prism/inbound/hysteria2"
+	"github.com/W1nCwC/W1nCray-prism/inbound/mieru"
 	"github.com/W1nCwC/W1nCray-prism/inbound/naive"
 	"github.com/W1nCwC/W1nCray-prism/inbound/trojan"
 	"github.com/W1nCwC/W1nCray-prism/inbound/tuic"
@@ -42,6 +43,7 @@ func newContext() context.Context {
 	naive.Register(in)
 	vless.Register(in)
 	trojan.Register(in)
+	mieru.Register(in)
 
 	out := outbound.NewRegistry()
 	direct.RegisterOutbound(out)
