@@ -1,3 +1,5 @@
+//go:build ignore
+
 // e2eclient is a throwaway test client for the lab: it speaks one of the Prism
 // protocols as a panel user and exposes a local mixed (HTTP + SOCKS) proxy, so a
 // plain curl can drive traffic through a real kernel. It is not shipped.
