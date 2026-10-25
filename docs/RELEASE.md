@@ -29,3 +29,9 @@ is informational: `-race` on the engine tests reports an unsynchronised
 `closed` flag inside the third-party `anytls/sing-anytls` stream (Write vs
 Close, both frames inside the library); the TUIC, Hysteria and Hysteria 2
 paths are clean.
+
+The mirror Release `prism-v<x>` in the W1nCray repository must never become the
+repository's "latest" release: the agent resolves its own newest release through
+`releases/latest`. Create it with `gh release create ... --latest=false`, and if a
+mirror ever took the flag, set the newest agent release back with
+`gh release edit v<agent> --latest`.
