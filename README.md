@@ -16,3 +16,12 @@ w1ncray-prism version
 ```
 
 License: GPL-3.0-or-later (see `LICENSE` and `NOTICE`). Releases: `docs/RELEASE.md`.
+
+## mieru on small hosts
+
+The mieru library keeps two process-wide replay caches (4M entries each, about 53 to 69
+bytes per entry once full, not configurable) that every received segment writes to before
+it is decrypted, so a flood of random packets can grow them to several hundred MB within
+minutes. Idle TCP connections are closed after 10 minutes since 0.3.1. On a host with
+512 MB or less, prefer the TCP transport and limit new connections per source address
+(`connlimit`) or UDP packet rate (`hashlimit`) in the firewall.

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	apicommon "github.com/enfein/mieru/v3/apis/common"
 	"github.com/enfein/mieru/v3/apis/trafficpattern"
@@ -57,6 +58,11 @@ func toUsers(list []credential) map[string]*appctlpb.User {
 	return users
 }
 
+// serverTCPIdleTimeout closes a TCP underlay that has carried nothing in either
+// direction for this long. The library keeps such connections forever by
+// default (about 20 KB each), which a scanner can use to exhaust a small host.
+const serverTCPIdleTimeout = 10 * time.Minute
+
 // newMux builds and starts the multiplexer. The library refuses to start
 // without a user, so an empty list gets one unguessable placeholder that no
 // panel user can be (names are decimal ids), and the first update replaces it.
@@ -78,7 +84,7 @@ func newMux(addr *net.TCPAddr, udp bool, trafficPattern string, list []credentia
 		list = placeholder()
 	}
 	m := protocol.NewMux(false)
-	m.SetTrafficPattern(cfg).SetServerUsers(toUsers(list))
+	m.SetTrafficPattern(cfg).SetServerUsers(toUsers(list)).SetServerTCPIdleTimeout(serverTCPIdleTimeout)
 	var endpoint protocol.UnderlayProperties
 	if udp {
 		endpoint = protocol.NewUnderlayProperties(common.DefaultMTU, common.PacketTransport, &net.UDPAddr{IP: addr.IP, Port: addr.Port}, nil)
