@@ -35,5 +35,8 @@ refused. Trojan fallbacks are not offered.
 mieru uses the user id (decimal) as user name and the uuid as password. Its
 config takes `listen_port` (one port; ranges are refused), `transport`
 (`tcp`, the default, or `udp`) and an optional `traffic_pattern` (base64, at
-most 2048 bytes; it need not equal the client's). `users` must be absent.
+most 2048 bytes; it need not equal the client's) and an optional
+`replay_cache_entries` (integer, 0 or absent = 1048576, otherwise 4096 to
+4194304; the capacity of the two process-wide replay caches, see README). `users`
+must be absent.
 Client and server clocks must differ by less than 4 minutes.

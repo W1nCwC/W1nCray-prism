@@ -142,3 +142,70 @@ func checkCredential(c credential) error {
 
 	return nil
 }
+
+// Replay cache sizing. The library keeps two process-wide replay caches (one
+// for streams, one for packets), so the capacity is a property of the process,
+// not of one inbound. Every running inbound registers the capacity it wants
+// and the largest one is in effect: a smaller cache would silently weaken the
+// replay protection of the inbound that asked for more. The value is
+// recomputed when an inbound starts or stops, so a config reload that lowers
+// the number takes effect once the old inbound is gone. A change drops the
+// signatures stored so far (a short window without replay detection).
+const (
+	// DefaultReplayCacheEntries is used when replay_cache_entries is 0.
+	DefaultReplayCacheEntries = 1048576
+	// MinReplayCacheEntries and MaxReplayCacheEntries bound replay_cache_entries.
+	MinReplayCacheEntries = 4096
+	MaxReplayCacheEntries = 4 * 1024 * 1024 // the library's own default
+)
+
+var (
+	replayMu   sync.Mutex
+	replayWant = map[*Inbound]int{}
+)
+
+// checkReplayEntries validates the replay_cache_entries option (0 = default).
+func checkReplayEntries(n int) error {
+	if n == 0 {
+		return nil
+	}
+	if n < MinReplayCacheEntries || n > MaxReplayCacheEntries {
+		return fmt.Errorf("replay_cache_entries must be 0 (default %d) or between %d and %d", DefaultReplayCacheEntries, MinReplayCacheEntries, MaxReplayCacheEntries)
+	}
+
+	return nil
+}
+
+// useReplayEntries registers what h wants and applies the largest request.
+func useReplayEntries(h *Inbound, n int) {
+	if n == 0 {
+		n = DefaultReplayCacheEntries
+	}
+	replayMu.Lock()
+	defer replayMu.Unlock()
+	replayWant[h] = n
+	applyReplayEntriesLocked()
+}
+
+// releaseReplayEntries drops the request of h; the rest keep their maximum.
+func releaseReplayEntries(h *Inbound) {
+	replayMu.Lock()
+	defer replayMu.Unlock()
+	if _, ok := replayWant[h]; !ok {
+		return
+	}
+	delete(replayWant, h)
+	applyReplayEntriesLocked()
+}
+
+func applyReplayEntriesLocked() {
+	most := 0
+	for _, n := range replayWant {
+		if n > most {
+			most = n
+		}
+	}
+	if most > 0 {
+		protocol.SetReplayCacheCapacity(most, most)
+	}
+}

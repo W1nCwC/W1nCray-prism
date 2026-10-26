@@ -13,6 +13,10 @@ type Options struct {
 	// TrafficPattern is the base64 traffic pattern of this server; it does not
 	// have to equal the client's.
 	TrafficPattern string `json:"traffic_pattern,omitempty"`
+	// ReplayCacheEntries is the capacity of the library's two process-wide replay
+	// caches (stream and packet, one value for both). 0 means 1048576; the range
+	// is 4096 to 4194304. With several mieru inbounds the largest value wins.
+	ReplayCacheEntries int `json:"replay_cache_entries,omitempty"`
 	// Users must stay empty: users travel over the IPC.
 	Users []any `json:"users,omitempty"`
 }

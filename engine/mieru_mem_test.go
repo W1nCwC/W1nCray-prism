@@ -21,10 +21,12 @@ import (
 	apiclient "github.com/enfein/mieru/v3/apis/client"
 	"github.com/enfein/mieru/v3/apis/model"
 	"github.com/enfein/mieru/v3/pkg/appctl/appctlpb"
+	"github.com/enfein/mieru/v3/pkg/protocol"
 	"github.com/enfein/mieru/v3/pkg/replay"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/W1nCwC/W1nCray-prism/gate"
+	prismmieru "github.com/W1nCwC/W1nCray-prism/inbound/mieru"
 )
 
 // Measurement only: skipped unless MIERU_MEM=1.
@@ -311,13 +313,14 @@ func phaseB(t *testing.T, conc, secs int) {
 }
 
 // replayFill drives the library's real ReplayCache past its capacity twice, so
-// the current and previous maps are both full: the worst case of one cache.
+// the current and previous maps are both full (2*capacity entries): the worst
+// case of one cache.
 func replayFill(t *testing.T, tag string, capacity int) {
 	before := takeMem(true, true)
 	c := replay.NewCache(capacity, time.Hour)
 	var buf [16]byte
 	x := uint64(0x9E3779B97F4A7C15)
-	for i := 0; i < 2*capacity+1; i++ {
+	for i := 0; i < 2*capacity; i++ {
 		for j := 0; j < 2; j++ {
 			x += 0x9E3779B97F4A7C15
 			z := x
@@ -357,7 +360,11 @@ func TestMieruMemory(t *testing.T) {
 		if os.Getenv("MIERU_REPLAY") == "0" {
 			t.Skip("MIERU_REPLAY=0")
 		}
-		replayFill(t, "", 4*1024*1024)
-		replayFill(t, "127.0.0.1:12345", 4*1024*1024)
+		// 262144 is the advice for 512 MB hosts, the default is what a fresh
+		// config gets, and the library's own size is kept for comparison.
+		for _, n := range []int{262144, prismmieru.DefaultReplayCacheEntries, protocol.DefaultReplayCacheEntries} {
+			replayFill(t, "", n)
+			replayFill(t, "127.0.0.1:12345", n)
+		}
 	})
 }

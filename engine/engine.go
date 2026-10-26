@@ -25,7 +25,7 @@ import (
 
 // Version is the program version; CoreVersion the embedded core's.
 const (
-	Version     = "0.3.1"
+	Version     = "0.3.2"
 	CoreVersion = "1.14.3"
 	APIVersion  = 1
 )

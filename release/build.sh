@@ -36,6 +36,9 @@ VEND="$(mktemp -d)"
 trap 'rm -rf "$STAGE" "$VEND"' EXIT
 cp -r "$STAGE/W1nCray-prism-$TAG/." "$VEND/"
 find "$VEND" -name '*_test.go' -delete
+# go.mod replaces github.com/enfein/mieru/v3 with ./third_party/mieru (a patched copy,
+# no *_test.go); go mod vendor copies the packages the program uses into vendor/ as
+# for any module, and the directory itself stays in the archive as the patch source.
 (cd "$VEND" && go mod vendor)
 mv "$VEND/vendor" "$STAGE/W1nCray-prism-$TAG/vendor"
 tar -C "$STAGE" -czf "$OUT/W1nCray-prism-$TAG-src.tar.gz" "W1nCray-prism-$TAG"

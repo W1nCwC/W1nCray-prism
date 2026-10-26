@@ -66,6 +66,9 @@ func New(ctx context.Context, router adapter.Router, logger log.ContextLogger, t
 	if err := checkTrafficPattern(options.TrafficPattern); err != nil {
 		return nil, E.Cause(err, "traffic_pattern")
 	}
+	if err := checkReplayEntries(options.ReplayCacheEntries); err != nil {
+		return nil, E.Cause(err, "replay_cache_entries")
+	}
 
 	return &Inbound{
 		Adapter: inbound.NewAdapter(Type, tag),
@@ -90,8 +93,10 @@ func (h *Inbound) Start(stage adapter.StartStage, scope *adapter.Scope) error {
 	h.mu.Lock()
 	users := append([]credential(nil), h.users...)
 	h.mu.Unlock()
+	useReplayEntries(h, h.options.ReplayCacheEntries)
 	m, err := newMux(&net.TCPAddr{IP: addr.AsSlice(), Port: int(h.options.ListenPort)}, h.udp, h.options.TrafficPattern, users)
 	if err != nil {
+		releaseReplayEntries(h)
 		return err
 	}
 	h.mu.Lock()
@@ -114,6 +119,7 @@ func (h *Inbound) stop() error {
 		return nil
 	}
 	h.stopped = true
+	releaseReplayEntries(h)
 	m := h.mux
 	conns := make([]net.Conn, 0, len(h.conns))
 	for c := range h.conns {

@@ -351,13 +351,17 @@ func TestMieruInvalidConfigKeepsTheRunningOne(t *testing.T) {
 	c := mieruClient(t, port, false, "1001", uuidA, "")
 
 	cases := map[string]string{
-		"bad base64":      fmt.Sprintf(`"listen_port":%d,"traffic_pattern":"@@@not-base64@@@"`, port),
-		"bad protobuf":    fmt.Sprintf(`"listen_port":%d,"traffic_pattern":"AAECAwQFBgcICQ=="`, port),
-		"pattern too big": fmt.Sprintf(`"listen_port":%d,"traffic_pattern":"%s"`, port, strings.Repeat("A", 3000)),
-		"users in cfg":    fmt.Sprintf(`"listen_port":%d,"users":[{"name":"1001","password":"p"}]`, port),
-		"port range":      `"listen_port":"2000-2010"`,
-		"bad transport":   fmt.Sprintf(`"listen_port":%d,"transport":"quic"`, port),
-		"no port":         `"transport":"tcp"`,
+		"bad base64":       fmt.Sprintf(`"listen_port":%d,"traffic_pattern":"@@@not-base64@@@"`, port),
+		"bad protobuf":     fmt.Sprintf(`"listen_port":%d,"traffic_pattern":"AAECAwQFBgcICQ=="`, port),
+		"pattern too big":  fmt.Sprintf(`"listen_port":%d,"traffic_pattern":"%s"`, port, strings.Repeat("A", 3000)),
+		"users in cfg":     fmt.Sprintf(`"listen_port":%d,"users":[{"name":"1001","password":"p"}]`, port),
+		"port range":       `"listen_port":"2000-2010"`,
+		"bad transport":    fmt.Sprintf(`"listen_port":%d,"transport":"quic"`, port),
+		"no port":          `"transport":"tcp"`,
+		"replay too small": fmt.Sprintf(`"listen_port":%d,"replay_cache_entries":4095`, port),
+		"replay too big":   fmt.Sprintf(`"listen_port":%d,"replay_cache_entries":4194305`, port),
+		"replay negative":  fmt.Sprintf(`"listen_port":%d,"replay_cache_entries":-1`, port),
+		"replay one":       fmt.Sprintf(`"listen_port":%d,"replay_cache_entries":1`, port),
 	}
 	for name, fields := range cases {
 		cfg := `{"inbounds":[{"type":"mieru","tag":"in","listen":"127.0.0.1",` + fields + `}]}`
@@ -372,5 +376,20 @@ func TestMieruInvalidConfigKeepsTheRunningOne(t *testing.T) {
 	}
 	if _, err := mieruFetch(c, v.target.URL, 1024, 0); err != nil {
 		t.Fatalf("the running config stopped serving: %v", err)
+	}
+}
+
+func TestMieruReplayCacheEntries(t *testing.T) {
+	v := newEnv(t)
+	for i, n := range []int{0, 4096, 262144, 1048576, 4194304} {
+		port := freePort(t)
+		cfg := fmt.Sprintf(`{"inbounds":[{"type":"mieru","tag":"in","listen":"127.0.0.1","listen_port":%d,"replay_cache_entries":%d}]}`, port, n)
+		if _, err := v.e.Apply(fmt.Sprintf("replay-%d", i), []byte(cfg)); err != nil {
+			t.Fatalf("replay_cache_entries=%d: %v", n, err)
+		}
+		v.setUsers("in", int64(i+1), gate.User{ID: 1001, UUID: uuidA})
+		if _, err := mieruFetch(mieruClient(t, port, false, "1001", uuidA, ""), v.target.URL, 1024, 0); err != nil {
+			t.Fatalf("replay_cache_entries=%d does not serve: %v", n, err)
+		}
 	}
 }

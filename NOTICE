@@ -17,4 +17,8 @@ corresponding source code (see docs/RELEASE.md).
 
 The mieru inbound uses the transport library github.com/enfein/mieru/v3
 (version 3.39.0, GPL-3.0-or-later, Copyright (C) mieru authors) as a Go
-dependency; it is not modified.
+dependency. The directory third_party/mieru is a copy of that version with a
+small patch set (a configurable replay cache capacity, see
+third_party/mieru/PRISM-PATCHES.md); it keeps the upstream LICENSE and copyright
+headers and is licensed GPL-3.0-or-later like the rest of the program. The go.mod
+replace directive points the build at it.
