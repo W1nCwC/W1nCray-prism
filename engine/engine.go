@@ -11,13 +11,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
 	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/option"
 	sjson "github.com/sagernet/sing/common/json"
+	"github.com/sagernet/sing/common/json/badoption"
+	"github.com/sagernet/sing/service/filemanager"
 
 	"github.com/W1nCwC/W1nCray-prism/gate"
 	"github.com/W1nCwC/W1nCray-prism/inbound/hot"
@@ -96,12 +100,97 @@ func (e *Engine) build(raw []byte) (*box.Box, *parsed, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
+	// Before the core builds anything: an ECH key file this machine cannot read
+	// takes the whole document down, so it is reported with its inbound and its
+	// field instead of the core's own "initialize inbound[N]" alone.
+	if err := checkECHKeyPaths(e.ctx, raw); err != nil {
+		return nil, nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
 	b, err := box.New(box.Options{Context: e.ctx, Options: opts})
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %v", ErrInvalid, err)
+		return nil, nil, fmt.Errorf("%w: %v", ErrInvalid, nameInbound(err, opts.Inbounds))
 	}
 
 	return b, p, nil
+}
+
+// inboundECH is the part of one inbound the ECH pre-flight reads. The panel
+// puts the ECH block in `tls` for every inbound type it serves.
+type inboundECH struct {
+	Tag string `json:"tag"`
+	TLS *struct {
+		ECH *struct {
+			Enabled bool                       `json:"enabled"`
+			Key     badoption.Listable[string] `json:"key"`
+			KeyPath string                     `json:"key_path"`
+		} `json:"ech"`
+	} `json:"tls"`
+}
+
+// checkECHKeyPaths reads every ECH key file the document names, so a path that
+// does not exist on this machine is reported with the inbound it belongs to and
+// with the field that carries it. Only readability is checked here: a file that
+// reads but is not an ECH KEYS block is the core's own matter (and its error
+// now names the inbound too, through nameInbound). A block with the key inline
+// leaves the path unused, so it is not read.
+func checkECHKeyPaths(ctx context.Context, raw []byte) error {
+	var doc struct {
+		Inbounds []inboundECH `json:"inbounds"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil // the core's own unmarshal reports a document that is not JSON
+	}
+	for i, in := range doc.Inbounds {
+		if in.TLS == nil || in.TLS.ECH == nil || !in.TLS.ECH.Enabled || in.TLS.ECH.KeyPath == "" || len(in.TLS.ECH.Key) > 0 {
+			continue
+		}
+		if _, err := filemanager.ReadFile(ctx, in.TLS.ECH.KeyPath); err != nil {
+			return fmt.Errorf("inbounds[%d]%s: tls.ech.key_path %q cannot be read: %w", i, tagNote(in.Tag, i), in.TLS.ECH.KeyPath, err)
+		}
+	}
+
+	return nil
+}
+
+// coreInboundIndex is the index the embedded core names when it cannot
+// initialize one inbound: `initialize inbound[3]: …` (box.go).
+var coreInboundIndex = regexp.MustCompile(`initialize inbound\[(\d+)\]`)
+
+// nameInbound adds the tag of the inbound a core error names by index, so the
+// operator reads which node of the document failed and not only its position:
+// `initialize inbound[0] (tag "node12@machine3"): missing certificate`.
+func nameInbound(err error, inbounds []option.Inbound) error {
+	loc := coreInboundIndex.FindStringSubmatchIndex(err.Error())
+	if loc == nil {
+		return err
+	}
+	i, convErr := strconv.Atoi(err.Error()[loc[2]:loc[3]])
+	if convErr != nil || i < 0 || i >= len(inbounds) {
+		return err
+	}
+	msg := err.Error()
+
+	return errors.New(msg[:loc[1]] + fmt.Sprintf(" (tag %q)", inboundTag(inbounds[i].Tag, i)) + msg[loc[1]:])
+}
+
+// inboundTag is the tag the core logs an inbound under: its own, or the index
+// when it carries none.
+func inboundTag(tag string, i int) string {
+	if tag == "" {
+		return strconv.Itoa(i)
+	}
+
+	return tag
+}
+
+// tagNote is the " (tag \"…\")" a pre-flight error appends, empty when the
+// inbound is named by its index anyway.
+func tagNote(tag string, i int) string {
+	if tag == "" {
+		return ""
+	}
+
+	return fmt.Sprintf(" (tag %q)", tag)
 }
 
 type parsed struct {
